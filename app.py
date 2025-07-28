@@ -43,7 +43,7 @@ with gr.Blocks() as interface:
                 avg_bet_size = gr.Textbox(label='avg_bet_size')
         run_button = gr.Button("Run prediction")
         output = gr.Textbox(label="Prediction result", interactive=False)
-    with gr.Tab("Batch predict"):
+    with gr.Tab("Batch prediction"):
         with gr.Column():
             input_file = gr.File(label="Upload file to be processed", file_types=[".csv"], interactive=True)
             run_button = gr.Button("Run prediction")

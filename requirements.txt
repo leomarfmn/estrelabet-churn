@@ -1,6 +1,11 @@
+# Modeling
 pandas
 numpy
 seaborn
+matplotlib
+scikit-learn
+
+# Deploying
 fastapi
 gradio
 uvicorn
