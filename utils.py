@@ -1,7 +1,10 @@
 import pandas as pd
 import numpy as np
 import joblib
-from constants_and_templates import BINNING_FEATURES, CATEGORICAL_COLUMNS, SINGLE_PREDICTION_OUTPUT_TEMPLATE
+from constants import BINNING_FEATURES, CATEGORICAL_COLUMNS
+from templates import SINGLE_PREDICTION_OUTPUT_TEMPLATE
+from fastapi.security.api_key import APIKeyHeader
+from fastapi import Security, status, HTTPException
 
 def single_prediction(*args):
     # Call the prediction function
@@ -37,20 +40,15 @@ def run_prediction(*args):
         prediction_type = "single"
         # Create dataframe from inputs
         columns = [
-            'user_id', 'session_id', 'timestamp', 'date', 'hour', 'day_of_week',
-            'is_weekend', 'is_holiday', 'game_type', 'sport_type', 'country', 'device_type',
-            'payment_method', 'user_age', 'account_age_days', 'vip_tier',
-            'campaign_type', 'bet_amount', 'win_amount', 'net_result',
-            'session_length_minutes', 'games_played', 'bonus_used',
-            'deposit_amount', 'withdrawal_amount', 'previous_session_gap_hours',
-            'lifetime_deposits', 'lifetime_bets', 'avg_bet_size'
+            'user_id', 'session_id', 'timestamp', 'date', 'is_weekend', 'is_holiday', 'bonus_used',
+            'country', 'device_type', 'payment_method', 'vip_tier', 'campaign_type', 'game_type', 'sport_type', 'user_age', 'account_age_days', 'bet_amount', 'win_amount', 'net_result', 'session_length_minutes', 'games_played', 'deposit_amount', 'withdrawal_amount', 'previous_session_gap_hours', 'lifetime_deposits', 'lifetime_bets', 'day_of_week', 'hour', 'avg_bet_size'
         ]
         df = pd.DataFrame([args], columns=columns)
     
     # Create features and score users
     df = create_features(df)
     with open('best_xgb_model.pkl', 'rb') as f:
-                churn_model = joblib.load(f)
+        churn_model = joblib.load(f)
     df['predicted_churn_proba'] = churn_model.predict_proba(df[churn_model.feature_names_in_])[:, 1]
     df['predicted_churn'] = churn_model.predict(df[churn_model.feature_names_in_])
 
@@ -198,3 +196,18 @@ def create_features(df):
     df['after_hours'] = df['hour'].between(0, 6).astype(int)
     
     return df
+
+
+api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
+def verify_developer_token(api_key: str = Security(api_key_header)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Unauthorized",
+    )
+    if api_key is None:
+        raise credentials_exception
+    elif api_key.split(" ")[-1] not in [
+        str("86100c8e-8293-11ee-b8b8-229a88394"),
+    ]:
+        raise credentials_exception
+    return api_key.split(" ")[-1]
